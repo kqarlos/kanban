@@ -41,6 +41,7 @@ function renderTask({ taskName, taskType }) {
     let taskItemEl = document.createElement("li");
     taskItemEl.classList.add("task-item");
     taskItemEl.setAttribute("data-task-id", taskIdCounter);
+    taskItemEl.setAttribute("draggable", "true");
 
     // Create div holder
     let taskInfoEl = document.createElement("div");
@@ -140,14 +141,63 @@ function taskStatusChangeHandler(e) {
     // Move task to the correct section
     if (statusValue === "to do") {
         tasksToDoEl.appendChild(task);
-      } 
-      else if (statusValue === "in progress") {
+    } else if (statusValue === "in progress") {
         tasksInProgressEl.appendChild(task);
-      } 
-      else if (statusValue === "completed") {
+    } else if (statusValue === "completed") {
         tasksCompletedEl.appendChild(task);
-      }
+    }
 }
+
+function dragTaskHandler(e) {
+    let taskId = e.target.getAttribute("data-task-id");
+    e.dataTransfer.setData("text/plain", taskId);
+
+}
+
+function dropZoneDragHandler(e) {
+    // If target is within a task list
+    let taskListEl = e.target.closest(".task-list");
+    if (taskListEl) {
+        e.preventDefault();
+        taskListEl.setAttribute("style", "background: rgba(68, 233, 255, 0.7); border-style: dashed;");
+    }
+}
+
+function dropTaskHandler(e) {
+    // Get id and draggaed element
+    let id = e.dataTransfer.getData("text/plain");
+    let draggableElement = document.querySelector(`[data-task-id='${id}']`);
+    // Get dropzone element
+    let dropZoneEl = e.target.closest(".task-list");
+    let statusType = dropZoneEl.id;
+
+    // Get element status type and update it according to the drop zone 
+    let statusSelectEl = draggableElement.querySelector("select[name='status-change']");
+    if (statusType === "tasks-to-do") {
+        statusSelectEl.selectedIndex = 0;
+    }
+    else if (statusType === "tasks-in-progress") {
+        statusSelectEl.selectedIndex = 1;
+    }
+    else if (statusType === "tasks-completed") {
+        statusSelectEl.selectedIndex = 2;
+    }
+
+    dropZoneEl.removeAttribute("style");
+    // Add task to drop zone
+    dropZoneEl.appendChild(draggableElement);
+}
+
+// Remove styling of task list element when dragLeave
+function dragLeaveHandler(e) {
+    var taskListEl = e.target.closest(".task-list");
+    if (taskListEl) {
+      taskListEl.removeAttribute("style");
+    }}
 
 pageContentEl.addEventListener("click", taskButtonHandler);
 pageContentEl.addEventListener("change", taskStatusChangeHandler);
+pageContentEl.addEventListener("dragstart", dragTaskHandler);
+pageContentEl.addEventListener("dragover", dropZoneDragHandler);
+pageContentEl.addEventListener("drop", dropTaskHandler);
+pageContentEl.addEventListener("dragleave", dragLeaveHandler);
