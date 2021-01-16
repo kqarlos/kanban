@@ -17,12 +17,20 @@ function taskFormHandler(e) {
 
     formEl.reset();
 
+    var isEdit = formEl.hasAttribute("data-task-id");
+
     let taskData = {
         taskName: taskNameInput,
         taskType: taskTypeInput
-
     }
-    renderTask(taskData);
+
+    if (isEdit) {
+        taskData.taskId = formEl.getAttribute("data-task-id");;
+        completeEditTask(taskData);
+    } else {
+        renderTask(taskData);
+    }
+
 }
 
 //Renders a task to the page
@@ -100,8 +108,15 @@ function editTask() {
     document.querySelector("select[name='task-type']").value = taskType;
     document.querySelector("#save-task").textContent = "Save Task";
     formEl.setAttribute("data-task-id", taskId);
+}
 
-
+function completeEditTask({ taskName, taskType, taskId }) {
+    let task = document.querySelector(`.task-item[data-task-id=${taskId}]`)
+    task.querySelector("h3.task-name").textContent = taskName;
+    task.querySelector("span.task-type").textContent = taskType;
+    alert("Task Updated!");
+    formEl.removeAttribute("data-task-id");
+    document.querySelector("#save-task").textContent = "Add Task";
 }
 
 function taskButtonHandler(e) {
