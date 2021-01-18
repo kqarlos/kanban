@@ -25,13 +25,13 @@ function taskFormHandler(e) {
     let taskData = {
         name: taskNameInput,
         type: taskTypeInput,
-        status: "to do"
     }
 
     if (isEdit) {
         taskData.taskId = formEl.getAttribute("data-task-id");;
         completeEditTask(taskData);
     } else {
+        taskData.status = "to do";
         renderTask(taskData);
     }
 
@@ -55,8 +55,27 @@ function renderTask(taskData) {
 
     // Add content to list item holder and list
     taskItemEl.appendChild(taskInfoEl);
-    taskItemEl.appendChild(createTaskActions(taskIdCounter));
-    tasksToDoEl.appendChild(taskItemEl);
+    let taskActionsEl = createTaskActions(taskIdCounter);
+    taskItemEl.appendChild(taskActionsEl);
+
+    switch (taskData.status) {
+        case ("to do"):
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 0;
+            tasksToDoEl.appendChild(taskItemEl);
+            break;
+        case "completed":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 2;
+            tasksCompletedEl.appendChild(taskItemEl);
+            break;
+        case "in progress":
+            taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 1;
+            tasksInProgressEl.appendChild(taskItemEl);
+            break;
+    }
+
+
+
+
     //Update task data object
     taskData.id = taskIdCounter;
     tasks.push(taskData);
@@ -86,6 +105,8 @@ function createTaskActions(taskId) {
     statusSelectEl.className = "select-status";
     statusSelectEl.setAttribute("name", "status-change");
     statusSelectEl.setAttribute("data-task-id", taskId);
+    actionsContainerEl.appendChild(statusSelectEl);
+
 
     var statusChoices = ["To Do", "In Progress", "Completed"];
     for (var i = 0; i < statusChoices.length; i++) {
@@ -95,8 +116,7 @@ function createTaskActions(taskId) {
         statusOptionEl.setAttribute("value", statusChoices[i]);
         statusSelectEl.appendChild(statusOptionEl);
     }
-    actionsContainerEl.appendChild(statusSelectEl);
-
+    // actionsContainerEl.appendChild(statusSelectEl);
     return actionsContainerEl;
 
 }
@@ -182,8 +202,10 @@ function taskStatusChangeHandler(e) {
 }
 
 function dragTaskHandler(e) {
-    let taskId = e.target.getAttribute("data-task-id");
-    e.dataTransfer.setData("text/plain", taskId);
+    if (e.target.matches("li.task-item")) {
+        let taskId = e.target.getAttribute("data-task-id");
+        e.dataTransfer.setData("text/plain", taskId);
+    }
 }
 
 function dropZoneDragHandler(e) {
@@ -196,6 +218,8 @@ function dropZoneDragHandler(e) {
 }
 
 function dropTaskHandler(e) {
+    e.preventDefault();
+
     // Get id and draggaed element
     let id = e.dataTransfer.getData("text/plain");
     let draggableElement = document.querySelector(`[data-task-id='${id}']`);
@@ -221,7 +245,7 @@ function dropTaskHandler(e) {
     // update task's in tasks array
     for (let i = 0; i < tasks.length; i++) {
         if (tasks[i].id === parseInt(id)) {
-            tasks[i].status = statusType;
+            tasks[i].status = statusSelectEl.value.toLowerCase();
         }
     }
     saveTasks();
@@ -236,9 +260,15 @@ function dragLeaveHandler(e) {
 }
 
 function saveTasks() {
-    localStorage.setItem("tasks", JSON.parse(tasks));
+    localStorage.setItem("tasks", JSON.stringify(tasks));
 }
 
+function loadTasks() {
+    var savedTasks = (JSON.parse(localStorage.getItem("tasks")) || []);
+    savedTasks.forEach(task => {
+        renderTask(task);
+    });
+}
 
 pageContentEl.addEventListener("click", taskButtonHandler);
 pageContentEl.addEventListener("change", taskStatusChangeHandler);
@@ -246,3 +276,5 @@ pageContentEl.addEventListener("dragstart", dragTaskHandler);
 pageContentEl.addEventListener("dragover", dropZoneDragHandler);
 pageContentEl.addEventListener("drop", dropTaskHandler);
 pageContentEl.addEventListener("dragleave", dragLeaveHandler);
+
+loadTasks();
